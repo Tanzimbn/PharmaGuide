@@ -36,19 +36,26 @@ class Settings(BaseSettings):
     score_threshold: float = 0.3
 
     # --- LLM adapter (swap point, arch §7) ---
-    # OpenAI-compatible chat endpoint: works with hosted free-trial hosts
-    # (Groq/OpenRouter/Together/...) and local Ollama. Production swaps base_url
-    # to an in-VPC / on-device endpoint — config only (NFR-2).
+    # Generation runs behind an OpenAI-compatible /chat/completions adapter, so
+    # any compatible host works with a config-only change: hosted free-trial
+    # endpoints (Groq / OpenRouter / Together / Fireworks) for the MVP, or a
+    # local on-device model (Ollama, llama.cpp) for in-VPC residency (NFR-2).
+    # Defaults target a free-trial host — NOT a paid OpenAI account. Override
+    # LLM_BASE_URL / LLM_MODEL / LLM_API_KEY via env for your provider; see
+    # .env.example for ready-to-use settings per host.
     llm_provider: str = "openai_compatible"
-    llm_base_url: str = "https://api.openai.com/v1"
+    llm_base_url: str = "https://api.groq.com/openai/v1"
     llm_api_key: str = ""  # set via env LLM_API_KEY; empty in tests/CI
-    llm_model: str = "gpt-4o-mini"
+    llm_model: str = "llama-3.3-70b-versatile"
     llm_timeout_s: float = 30.0
     llm_max_tokens: int = 1024
 
     # --- App ---
     app_name: str = "PharmaGuide"
     debug: bool = False
+    # Origins allowed to call the API (React dev server). Override via env
+    # CORS_ORIGINS as a JSON list, e.g. '["http://localhost:5173"]'.
+    cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
 
 @lru_cache
