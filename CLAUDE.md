@@ -7,6 +7,13 @@ engineers query a document-scoped corpus. Specs live in `docs/mvp.md` and
 `docs/architecture.md` — treat those as the source of truth for requirements
 (FR-*/NFR-* IDs are referenced throughout the code).
 
+**Two product tracks.** *Track A — web* (this codebase: shared admin-curated
+corpus, server-side models, phases P1–P5) is what currently exists. *Track B —
+mobile* (a personal, on-device React Native app with the same groundedness
+contract; specced in `docs/mobile.md`, phases M0–M5) is planned and not yet
+built. The web app stays and evolves on its own; mobile is a separate build.
+Unless a task says "mobile", assume Track A.
+
 ## Non-negotiables (groundedness first — NFR-1)
 
 - Answers come **only** from retrieved chunks. Never supplement with model
@@ -98,8 +105,14 @@ cd backend && pytest -q
 
 ## Phase status
 
+**Track A (web):**
 - **P1 Ingestion core** — done (extract, chunk, embed, store, atomic replace/delete).
 - **P2 Query core** — done (retrieve → rerank → score guard → cited generation).
 - **P3 Document selection** — done (React query UI, scoped queries).
-- **P4 Admin UI**, **P5 eval/gold-set + latency tune** — not started.
-  `score_threshold` (config) is a placeholder to tune against a gold set in P5.
+- **P4 Admin UI** — done (React upload/categorize/replace/delete with live status;
+  branch `feat/p4-admin-ui`).
+- **P5 eval/gold-set + latency tune** — not started. `score_threshold` (config)
+  is a placeholder to tune against a gold set in P5.
+
+**Track B (mobile, `docs/mobile.md`):** not started. Phases M0–M5; M0 is an
+on-device ONNX inference spike that de-risks the whole track. No code yet.
