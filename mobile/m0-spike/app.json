@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "M0 Spike",
+    "slug": "pharmaguide-m0-spike",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "com.pharmaguide.m0spike",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.pharmaguide.m0spike"
+    },
+    "plugins": ["expo-asset"]
+  }
+}

@@ -52,8 +52,10 @@ backend/            FastAPI + SQLAlchemy 2.0 + Alembic; Postgres/pgvector
     schemas.py      pydantic I/O models
   migrations/       Alembic; 0001 = tables + HNSW + btree indexes
   tests/            pytest; DB tests skip when Postgres absent
-frontend/           Vite + React 19 + TS + Tailwind v4 query UI (P3)
-docs/               mvp.md (requirements), architecture.md (design)
+frontend/           Vite + React 19 + TS + Tailwind v4 SPA
+  src/              App, QueryPanel + DocumentSelector (P3), AdminPanel (P4), api.ts
+docs/               mvp.md (requirements), architecture.md (design),
+                    mobile.md (Track B spec), mobile-m0-spike.md (M0 spike plan)
 ```
 
 ## Run
@@ -114,5 +116,8 @@ cd backend && pytest -q
 - **P5 eval/gold-set + latency tune** — not started. `score_threshold` (config)
   is a placeholder to tune against a gold set in P5.
 
-**Track B (mobile, `docs/mobile.md`):** not started. Phases M0–M5; M0 is an
-on-device ONNX inference spike that de-risks the whole track. No code yet.
+**Track B (mobile, `docs/mobile.md`):** planning only — no app code yet.
+Phases M0–M5; M0 is an on-device ONNX inference spike (RN +
+`onnxruntime-react-native`) that de-risks the whole track — detailed plan in
+`docs/mobile-m0-spike.md`. Gate: do not build past M0 until M0 passes. Work
+lives on `mobile/*` branches (`mobile/docs-plan`, `mobile/m0-spike`).
