@@ -13,6 +13,14 @@
     "android": {
       "package": "com.pharmaguide.m0spike"
     },
-    "plugins": ["expo-asset"]
+    "plugins": [
+      "expo-asset",
+      [
+        "expo-build-properties",
+        {
+          "android": { "kotlinVersion": "1.9.24" }
+        }
+      ]
+    ]
   }
 }

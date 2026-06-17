@@ -5,39 +5,30 @@
 // time). See assets/models/README.md.
 import { Asset } from "expo-asset";
 
-// Bundle precision. int8 = the quantized models (4x smaller, what a shipped app
-// would carry); fp32 = full precision. export_onnx.py prints which precision
-// passed parity — bundle that one. Metro needs literal require paths, so both
-// precisions are require()'d and the flag just selects which path to return.
-export const BUNDLE: "int8" | "fp32" = "int8";
-
-// Static requires (Metro needs literal paths). assetExts in metro.config.js
-// makes .onnx / .txt load as binary/text assets.
+// We bundle the int8 (quantized) models only. `require` is static — Metro
+// bundles every required file regardless of any runtime flag — and the fp32
+// reranker is ~1 GB, which (a) blows Node's max string length when Metro reads
+// it (`Cannot create a string longer than 0x1fffffe8`) and (b) can't ship on
+// mobile anyway. int8 is what a real app would carry; export_onnx.py confirms
+// int8 passes parity. To test fp32 instead, swap the require paths below (only
+// embed fp32 at ~127 MB is small enough for Metro; the fp32 reranker is not).
 const REGISTRY = {
-  embedModelFp32: require("../assets/models/bge-small-en-v1.5/model.onnx"),
-  embedModelInt8: require("../assets/models/bge-small-en-v1.5/model.int8.onnx"),
+  embedModel: require("../assets/models/bge-small-en-v1.5/model.int8.onnx"),
   embedVocab: require("../assets/models/bge-small-en-v1.5/vocab.txt"),
-  rerankModelFp32: require("../assets/models/bge-reranker-base/model.onnx"),
-  rerankModelInt8: require("../assets/models/bge-reranker-base/model.int8.onnx"),
-} as const;
-
-const PRECISION = {
-  embedModel: { int8: "embedModelInt8", fp32: "embedModelFp32" },
-  rerankModel: { int8: "rerankModelInt8", fp32: "rerankModelFp32" },
+  rerankModel: require("../assets/models/bge-reranker-base/model.int8.onnx"),
 } as const;
 
 export type AssetName = keyof typeof REGISTRY;
 
-/** Download (cache) a bundled asset and return a plain filesystem path. */
+/** Download (cache) a bundled asset and return its file:// URI.
+ *  Use for expo-file-system readers (readAsStringAsync), which need the scheme. */
 export async function assetPath(name: AssetName): Promise<string> {
   const asset = Asset.fromModule(REGISTRY[name]);
   if (!asset.downloaded) await asset.downloadAsync();
-  const uri = asset.localUri ?? asset.uri;
-  // ORT and FileSystem readers want a bare path, not a file:// URI.
-  return uri.replace(/^file:\/\//, "");
+  return asset.localUri ?? asset.uri;
 }
 
-/** Resolve a model to the file for the bundled precision (int8 | fp32). */
-export function modelPath(logical: keyof typeof PRECISION): Promise<string> {
-  return assetPath(PRECISION[logical][BUNDLE]);
+/** Resolve a model to a bare filesystem path (no file:// scheme) for ORT. */
+export async function modelPath(logical: "embedModel" | "rerankModel"): Promise<string> {
+  return (await assetPath(logical)).replace(/^file:\/\//, "");
 }

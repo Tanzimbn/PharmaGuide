@@ -135,3 +135,52 @@ M1 starts.
 
 **Time box:** ~1–2 days. If model export or the tokenizer eats more than that,
 that *is* a signal — note it and report, don't grind.
+
+---
+
+## 9. Results
+
+Models shipped at **int8** (dynamic quant): embed 126.9→32.4 MB, rerank
+1060.9→266.3 MB (~4× smaller). Laptop parity: `PARITY PASSED` — int8 embed
+cosine ≥ 0.9965, rerank sigmoid diff ≤ 0.0004 vs the web app.
+
+### Device 1 — Android (physical)
+
+| Metric | CPU | Accelerated (NNAPI) | Threshold | Verdict |
+| --- | --- | --- | --- | --- |
+| Embed ×200 (ingest) | 7409 ms | 16139 ms | ≤ 20 s | ✅ |
+| Embed ×1 (query) | 65 ms | 8052 ms | < 150 ms | ✅ |
+| Rerank ×20 | 3042 ms | 15608 ms | < 1 s / 1–3 s | 🟡 (3.0 s, at the line) |
+| Cold model load | 1926 ms | 9194 ms | < 3 s | ✅ |
+| Peak memory | no crash (266 MB int8 reranker resident) | — | no OOM | ✅ |
+| Tokenizer match | ids match Python | — | match | ✅ |
+| Accel vs CPU | — | **2–5× slower** | accel faster | ❌ |
+
+**NNAPI finding (not a build bug):** hardware acceleration is a net *loss* for
+these int8-dynamic-quantized transformers. NNAPI can't execute dynamic-quant
+matmul, so ORT partitions the graph and bounces every op across the CPU↔NNAPI
+boundary (copy + serialize each time); NNAPI graph compilation also dominates the
+9.2 s "cold load". **Plain CPU is the viable path** — and is fast on its own.
+
+## 10. Verdict — 🟡 Yellow (proceed to M1 with rerank mitigation)
+
+Query path is strong on CPU (embed ×1 = 65 ms, cold load 1.9 s, ingest 7.4 s —
+all comfortably ✅) and tokenizer ids match, so on-device retrieval is correct and
+fast. Two qualifiers, both already anticipated in `mobile.md`:
+
+1. **Rerank ×20 sits at 3.0 s on CPU** (strict bar is 1 s; 1–3 s is borderline).
+   Mitigations per §7 / `mobile.md` §12: chunk/background the rerank, reduce the
+   rerank top-k, or **drop the on-device reranker** (rely on bge-small + a larger
+   top-k) and re-test query-only.
+2. **Hardware acceleration does not engage for int8.** If the reranker is kept
+   and must be faster, the lever is precision/EP (fp16 reranker on GPU/CoreML),
+   not NNAPI on int8.
+
+**Next step (M1 gate input):** proceed to M1 on the **CPU int8** path. Decide
+reranker policy early in M1 — measure retrieval quality with vs without the
+reranker on a small gold set; if quality holds without it, drop it and the 3 s
+rerank cost disappears. Reranker score parity still rests on the laptop check
+(`export_onnx.py`) until M1 adds a SentencePiece tokenizer (README §caveat).
+
+iPhone/CoreML row left unfilled — single Android device tested. Fill if an iOS
+device becomes available; CoreML may handle int8 better than NNAPI did.
