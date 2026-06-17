@@ -1,26 +1,30 @@
 {
   "expo": {
-    "name": "M0 Spike",
-    "slug": "pharmaguide-m0-spike",
+    "name": "PharmaGuide",
+    "slug": "pharmaguide-mobile",
     "version": "0.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "bundleIdentifier": "com.pharmaguide.m0spike",
+      "bundleIdentifier": "com.pharmaguide.app",
       "supportsTablet": true
     },
     "android": {
-      "package": "com.pharmaguide.m0spike"
+      "package": "com.pharmaguide.app"
     },
     "plugins": [
       "expo-asset",
       [
         "expo-build-properties",
         {
-          "android": { "kotlinVersion": "1.9.24" }
+          "android": {
+            "kotlinVersion": "1.9.24"
+          }
         }
-      ]
+      ],
+      "expo-sqlite",
+      "./plugins/withOnnxRuntimePin"
     ]
   }
 }
