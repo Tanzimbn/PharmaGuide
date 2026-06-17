@@ -11,9 +11,11 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 
+import { answerQuestion } from "./src/answer";
 import {
   ChunkPreview,
   DocumentListItem,
@@ -22,6 +24,7 @@ import {
 } from "./src/db";
 import { deleteDocument, replaceDocument } from "./src/lifecycle";
 import { ingestDocument } from "./src/pipeline";
+import { AnswerOut } from "./src/types";
 
 interface Picked {
   uri: string;
@@ -45,6 +48,20 @@ export default function App() {
   const [log, setLog] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [dump, setDump] = useState<Record<string, ChunkPreview[]>>({});
+
+  const [question, setQuestion] = useState("");
+  const [scope, setScope] = useState<Set<string>>(new Set()); // empty => all ready
+  const [ans, setAns] = useState<AnswerOut | null>(null);
+
+  const readyDocs = docs.filter((d) => d.status === "ready");
+
+  function toggleScope(id: string) {
+    setScope((s) => {
+      const next = new Set(s);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
 
   async function refresh() {
     setDocs(await listDocuments());
@@ -114,11 +131,24 @@ export default function App() {
     });
   }
 
+  function onAsk() {
+    const q = question.trim();
+    if (!q) return;
+    setBusy("ask");
+    setErr(null);
+    setAns(null);
+    const docIds = scope.size ? [...scope] : undefined; // undefined => all ready
+    answerQuestion(q, { docIds })
+      .then(setAns)
+      .catch((e) => setErr(String(e instanceof Error ? (e.stack ?? e.message) : e)))
+      .finally(() => setBusy(null));
+  }
+
   return (
     <ScrollView contentContainerStyle={styles.page}>
       <StatusBar style="auto" />
-      <Text style={styles.h1}>PharmaGuide — M1 ingestion</Text>
-      <Text style={styles.sub}>Pick a (non-confidential) PDF to ingest on-device.</Text>
+      <Text style={styles.h1}>PharmaGuide — M1/M2 harness</Text>
+      <Text style={styles.sub}>Pick a (non-confidential) PDF to ingest on-device, then query it.</Text>
 
       <Btn label="Pick PDF & ingest" disabled={!!busy} onPress={onIngest} />
 
@@ -151,6 +181,52 @@ export default function App() {
           ))}
         </View>
       ))}
+
+      <Text style={[styles.h1, styles.qHeading]}>Query</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Ask a question about the selected guidelines…"
+        value={question}
+        onChangeText={setQuestion}
+        multiline
+        editable={!busy}
+      />
+      {readyDocs.length > 0 && (
+        <>
+          <Text style={styles.note}>Scope (none selected = all ready):</Text>
+          <View style={styles.chips}>
+            {readyDocs.map((d) => {
+              const on = scope.has(d.id);
+              return (
+                <Pressable
+                  key={d.id}
+                  onPress={() => toggleScope(d.id)}
+                  style={[styles.chip, on && styles.chipOn]}
+                >
+                  <Text style={[styles.chipText, on && styles.chipTextOn]}>{d.filename}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </>
+      )}
+      <Btn label="Ask" disabled={!!busy || !question.trim()} onPress={onAsk} />
+
+      {ans && (
+        <View style={[styles.card, ans.not_covered && styles.cardWarn]}>
+          {ans.not_covered && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>NOT COVERED</Text>
+            </View>
+          )}
+          <Text style={styles.answer}>{ans.answer}</Text>
+          {ans.citations.map((c, i) => (
+            <Text key={i} style={styles.cite}>
+              • {c.filename} · p.{c.page}
+            </Text>
+          ))}
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -204,4 +280,24 @@ const styles = StyleSheet.create({
   ok: { color: "#0a7d24", fontSize: 13 },
   note: { color: "#777", fontSize: 12, marginTop: 16 },
   err: { color: "#b00020", fontFamily: "Courier", fontSize: 12 },
+  qHeading: { marginTop: 28 },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 10,
+    padding: 12,
+    minHeight: 64,
+    fontSize: 15,
+    textAlignVertical: "top",
+  },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginVertical: 6 },
+  chip: { borderWidth: 1, borderColor: "#1f6feb", borderRadius: 16, paddingVertical: 6, paddingHorizontal: 12 },
+  chipOn: { backgroundColor: "#1f6feb" },
+  chipText: { color: "#1f6feb", fontSize: 13 },
+  chipTextOn: { color: "white" },
+  cardWarn: { borderColor: "#b00020", backgroundColor: "#fff5f5" },
+  badge: { alignSelf: "flex-start", backgroundColor: "#b00020", borderRadius: 6, paddingVertical: 2, paddingHorizontal: 8, marginBottom: 6 },
+  badgeText: { color: "white", fontSize: 11, fontWeight: "700" },
+  answer: { fontSize: 15, lineHeight: 21 },
+  cite: { color: "#1f6feb", fontSize: 13, marginTop: 6, fontVariant: ["tabular-nums"] },
 });

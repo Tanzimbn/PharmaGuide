@@ -33,3 +33,29 @@ export interface DocumentRow {
   added_at: string; // ISO 8601
   version: number;
 }
+
+// --- Query path (M2) — mirror backend/app/query + schemas.py ---
+
+/** A chunk returned from kNN retrieval, with its cosine similarity (0..1). */
+export interface RetrievedChunk {
+  chunk_id: string;
+  doc_id: string;
+  filename: string;
+  page_number: number; // citation source
+  text: string;
+  similarity: number; // cosine, 0..1 (vectors are L2-normalized)
+}
+
+/** Page-level source reference (OQ-2). Mandatory on every grounded answer. */
+export interface Citation {
+  doc_id: string;
+  filename: string;
+  page: number;
+}
+
+/** Result of a query. `not_covered` true => citations empty (FR-Q7). */
+export interface AnswerOut {
+  answer: string;
+  citations: Citation[];
+  not_covered: boolean;
+}

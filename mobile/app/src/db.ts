@@ -129,6 +129,50 @@ export async function countChunks(docId: string): Promise<number> {
   return row?.n ?? 0;
 }
 
+export interface ReadyChunk {
+  chunk_id: string;
+  doc_id: string;
+  filename: string;
+  page_number: number;
+  text: string;
+  embedding: Float32Array;
+}
+
+/**
+ * All chunks of queryable (`ready`) documents, with embeddings decoded to
+ * Float32 (M2 brute-force kNN). Optionally scoped to `docIds` (FR-Q4/Q8); an
+ * empty/omitted list means all ready documents. Non-ready versions never leak.
+ */
+export async function fetchReadyChunks(docIds?: string[]): Promise<ReadyChunk[]> {
+  const db = await getDb();
+  let sql =
+    `SELECT c.id AS chunk_id, c.doc_id AS doc_id, d.filename AS filename,
+            c.page_number AS page_number, c.text AS text, c.embedding AS embedding
+     FROM chunks c JOIN documents d ON c.doc_id = d.id
+     WHERE d.status = 'ready'`;
+  const params: string[] = [];
+  if (docIds && docIds.length) {
+    sql += ` AND c.doc_id IN (${docIds.map(() => "?").join(",")})`;
+    params.push(...docIds);
+  }
+  const rows = await db.getAllAsync<{
+    chunk_id: string;
+    doc_id: string;
+    filename: string;
+    page_number: number;
+    text: string;
+    embedding: Uint8Array;
+  }>(sql, ...params);
+  return rows.map((r) => ({
+    chunk_id: r.chunk_id,
+    doc_id: r.doc_id,
+    filename: r.filename,
+    page_number: r.page_number,
+    text: r.text,
+    embedding: blobToVec(r.embedding),
+  }));
+}
+
 export interface ChunkPreview {
   page_number: number;
   token_count: number;

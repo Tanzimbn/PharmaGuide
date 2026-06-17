@@ -116,8 +116,23 @@ cd backend && pytest -q
 - **P5 eval/gold-set + latency tune** — not started. `score_threshold` (config)
   is a placeholder to tune against a gold set in P5.
 
-**Track B (mobile, `docs/mobile.md`):** planning only — no app code yet.
-Phases M0–M5; M0 is an on-device ONNX inference spike (RN +
-`onnxruntime-react-native`) that de-risks the whole track — detailed plan in
-`docs/mobile-m0-spike.md`. Gate: do not build past M0 until M0 passes. Work
-lives on `mobile/*` branches (`mobile/docs-plan`, `mobile/m0-spike`).
+**Track B (mobile, `docs/mobile.md`):** phases M0–M5; app lives in `mobile/app/`,
+extraction service in `mobile/extract-service/`. Work on `mobile/*` branches.
+- **M0 Inference spike** — done (🟡). bge-small int8 runs + parity-verified on
+  Android CPU; NNAPI a net loss for int8 → CPU is the path. Plan/gates in
+  `docs/mobile-m0-spike.md`. Branch `mobile/m0-spike`.
+- **M1 On-device ingestion** — done. Pick PDF → extract (off-device pdfplumber
+  service, FR-R1 tables) → chunk (parity-checked vs backend `chunk_pages`) →
+  embed on-device → store in SQLite; status processing→ready→failed, atomic
+  replace/delete (FR-A2/A3, NFR-4). Embeddings stored as Float32 BLOB; sqlite-vec
+  vs brute-force kNN deferred to M2. Branch `mobile/m1-ingestion`.
+- **M2 On-device query** — done. embed query → **brute-force JS kNN** (over BLOB
+  vectors; sqlite-vec deferred — personal-scale corpus) → score guard → LLM →
+  grounded, page-cited answer + "not covered" fallback (FR-Q7/R3/R4, OQ-2,
+  FR-Q4/Q8). **Reranker dropped for M2** (needs unbuilt SentencePiece tokenizer +
+  ~3s/query; revisit with a gold set) → guard runs on **cosine similarity**
+  (`SCORE_THRESHOLD` placeholder, calibrate M5). LLM = OpenAI-compatible adapter
+  in `src/llm.ts`, key from gitignored `.env` (M4 = secure storage). Files
+  `src/{retrieve,llm,answer}.ts`.
+- **M3 Personal docs UI** — not started (real add/categorize/replace/delete +
+  query UI; current App.tsx is a dev harness).

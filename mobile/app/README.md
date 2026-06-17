@@ -1,10 +1,12 @@
 # PharmaGuide mobile (Track B)
 
 On-device RAG app. Graduated from the M0 inference spike (which proved bge-small
-runs on-device, CPU int8; see `docs/mobile-m0-spike.md` §9–10). Current phase:
+runs on-device, CPU int8; see `docs/mobile-m0-spike.md` §9–10). Phases done:
 **M1 — on-device ingestion** (pick PDF → extract → chunk → embed → SQLite, with
-status lifecycle + atomic replace/delete). Query, real UI, and the LLM call are
-M2–M4. Spec: [`docs/mobile.md`](../../docs/mobile.md).
+status lifecycle + atomic replace/delete) and **M2 — on-device query** (embed →
+brute-force kNN → score guard → hosted LLM → grounded, page-cited answer +
+"not covered" fallback). Real docs UI is M3; BYO-key + secure storage is M4.
+Spec: [`docs/mobile.md`](../../docs/mobile.md).
 
 Use **non-confidential sample PDFs only** (NFR-2): generation/extraction are not
 yet on-device.
@@ -41,6 +43,12 @@ ipconfig getifaddr en0     # macOS — put this in src/config.ts EXTRACT_BASE_UR
 
 Set `EXTRACT_BASE_URL` in `src/config.ts` to `http://<that-ip>:8001`.
 
+For M2 query, also set the LLM endpoint in `src/config.ts`: paste a trial key
+into `LLM_API_KEY` (`LLM_BASE_URL`/`LLM_MODEL` default to Groq's free trial). Dev
+only — M4 moves the key into secure storage. **NFR-2: non-confidential sample
+PDFs only** — retrieved chunks leave the device to the hosted LLM. Do not commit
+a real key.
+
 ## 2. Build the dev client (native modules → not Expo Go)
 
 ```bash
@@ -54,16 +62,25 @@ regenerated): Kotlin 1.9.24 via `expo-build-properties` (app.json), onnxruntime
 AAR 1.20.0 via `plugins/withOnnxRuntimePin.js`, `.onnx` assetExts via
 `metro.config.js`.
 
-## 3. Verify M1
+## 3. Verify M1 / M2
 
-- **Chunk parity (laptop):** `cd ../tools && python chunk_parity.py && npx tsx
-  chunk_parity.ts` → `CHUNK PARITY PASSED` (TS chunker == backend chunker).
-- **Device:** pick a sample PDF → status `processing`→`ready`, chunks > 0, pages
-  populated. **Replace** bumps version, old chunks gone. **Delete** removes rows.
-  Kill the service mid-ingest → status `failed`, zero partial chunks. "Dump DB"
-  shows per-chunk page_number/token_count/preview.
+- **Parity (laptop):** `cd ../tools` then
+  - `python chunk_parity.py && npx tsx chunk_parity.ts` → `CHUNK PARITY PASSED`
+    (TS chunker == backend chunker).
+  - `python query_parity.py && npx tsx query_parity.ts` → `QUERY PARITY PASSED`
+    (prompt/citations byte-identical to web; brute-force kNN == numpy cosine).
+- **Device (M1):** pick a sample PDF → status `processing`→`ready`, chunks > 0,
+  pages populated. **Replace** bumps version, old chunks gone. **Delete** removes
+  rows. Kill the service mid-ingest → status `failed`, zero partial chunks.
+  "Dump DB" shows per-chunk page_number/token_count/preview.
+- **Device (M2):** in the Query section, ask a question answerable from the PDF →
+  grounded answer + ≥1 citation (`filename · p.N`). Ask an off-topic question →
+  exactly "Not covered in the selected guidelines." with the NOT COVERED badge.
+  Scope chips constrain retrieval to selected docs (none = all ready). Bad/empty
+  `LLM_API_KEY` → user-facing error, no crash.
 
-## Out of scope (M2+)
+## Out of scope (M3+)
 
-kNN/retrieval, reranker on-device + SentencePiece tokenizer, score-threshold
-guard, LLM call, BYO-key secure storage, real docs UI.
+Reranker on-device + SentencePiece tokenizer, sqlite-vec, BYO-key entry + secure
+storage / settings (M4), gold-set accuracy + score-threshold calibration +
+latency/battery tuning (M5), real docs/query UI (M3).
