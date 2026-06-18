@@ -93,8 +93,27 @@ after pulling M4; JS-only changes hot-reload after that.
     (`filename · p.N`). Off-topic / wrong scope → "Not covered in the selected
     guidelines." + NOT COVERED badge. Bad model id / network → inline error.
 
-## Out of scope (M5)
+## Eval & calibration (M5)
+
+Score-guard threshold (`SCORE_THRESHOLD`) and retrieval accuracy are calibrated
+off-device against a gold set — see [`mobile/tools/eval`](../tools/eval/README.md):
+drop non-confidential PDFs in `corpus/`, author `gold.json`, then
+`../../../backend/.venv/bin/python run_eval.py` → recommended τ + recall@k.
+
+**Latency (on-device):** the query path logs stage timings in dev. With Metro
+attached, ask ~5 gold questions and read:
+
+```
+[latency] embed=__ms  knn=__ms  (N chunks)
+[latency] generate=__ms  total=__ms
+```
+
+Note p50/p95 of `total` (and that `embed` dominates, `knn` is negligible at
+personal scale — kNN grows linearly with corpus; sqlite-vec is the future lever
+if it ever dominates). Battery/thermal: brief manual observation over an
+ingest+query session.
+
+## Out of scope (post-M5)
 
 On-device LLM (llama.cpp / MLC) for full residency, on-device extraction
-(removing the network hop), gold-set accuracy + score-threshold calibration +
-latency/battery tuning.
+(removing the network hop), on-device reranker (SentencePiece), sqlite-vec.

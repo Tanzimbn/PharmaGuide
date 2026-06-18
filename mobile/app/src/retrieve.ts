@@ -39,8 +39,11 @@ export async function retrieve(
   if (!candidates.length) return [];
 
   const embedder = await getEmbedder();
+  const tEmbed = Date.now();
   const [qvec] = await embedder.embed([question]);
+  const embedMs = Date.now() - tEmbed;
 
+  const tKnn = Date.now();
   const scored: RetrievedChunk[] = candidates.map((c) => ({
     chunk_id: c.chunk_id,
     doc_id: c.doc_id,
@@ -49,7 +52,12 @@ export async function retrieve(
     text: c.text,
     similarity: dot(qvec, c.embedding),
   }));
-
   scored.sort((a, b) => b.similarity - a.similarity);
+  const knnMs = Date.now() - tKnn;
+
+  // M5 latency: stage timings for the §10 budget (dev only, no PII).
+  if (__DEV__) {
+    console.log(`[latency] embed=${embedMs}ms  knn=${knnMs}ms  (${candidates.length} chunks)`);
+  }
   return scored.slice(0, topK ?? QUERY_TOP_K);
 }

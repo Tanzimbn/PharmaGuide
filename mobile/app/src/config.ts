@@ -16,9 +16,14 @@ export const QUERY_TOP_K = 5; // chunks sent to the LLM. No reranker in M2, so
 // Score guard (FR-Q7): refuse before any LLM call if the best chunk is below
 // this. NOTE: this is COSINE SIMILARITY (0..1, L2-normalized vectors), NOT the
 // web's sigmoid rerank score — different distribution, so a different number.
-// M2 drops the reranker, so the guard runs on retrieval cosine. Placeholder;
-// calibrate against a gold set in M5 (mobile.md §13 M5).
-export const SCORE_THRESHOLD = 0.3;
+// M2 drops the reranker, so the guard runs on retrieval cosine.
+//
+// M5 calibration (2026-06-18, mobile/tools/eval, PIC/S GMP gold set, n=10):
+// covered top-1 cosine 0.71–0.84, not-covered 0.44–0.66 — fully separable. Set
+// to the midpoint of the gap (robust τ ≈ 0.681, ±0.024 margin) to absorb the
+// small fp32→int8 on-device drift. recall@5 = 0.80. Re-run run_eval.py if the
+// corpus changes materially.
+export const SCORE_THRESHOLD = 0.68;
 
 export const LLM_MAX_TOKENS = 1024;
 export const LLM_TIMEOUT_MS = 30000;

@@ -149,6 +149,10 @@ extraction service in `mobile/extract-service/`. Work on `mobile/*` branches.
   builders split to `src/prompt.ts` (keeps parity Node-loadable). One native
   module → one-time `expo prebuild` + dev-client reinstall. Extraction is a
   **per-user BYO endpoint, never shared** (NFR-2). Branch `mobile/m4-settings`.
-- **M5 Hardening** — not started (gold-set accuracy, `SCORE_THRESHOLD`
-  calibration, latency/battery tuning, on-device-LLM exploration for full
-  residency).
+- **M5 Hardening** — done (on-device LLM deferred). Off-device Python eval
+  harness `mobile/tools/eval/run_eval.py` (reuses backend bge-small + chunk
+  logic) over a PIC/S GMP gold set → **cosine score-guard calibrated**:
+  `SCORE_THRESHOLD` 0.3 → **0.68** (separation-gap midpoint, ±0.024 margin for
+  fp32→int8 drift), recall@5 = 0.80. Latency = `__DEV__` stage timings in
+  `retrieve.ts`/`answer.ts` (read on device). On-device LLM/reranker/extraction +
+  sqlite-vec deferred. Branch `mobile/m5-hardening`.
