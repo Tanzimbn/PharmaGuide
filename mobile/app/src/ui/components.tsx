@@ -1,11 +1,13 @@
-// Reusable UI kit for the M3 app, styled from theme tokens. Pure RN only — icons
-// are Unicode/emoji glyphs (no @expo/vector-icons, which pulls the native
-// expo-font module and would force a dev-client rebuild). No business logic
-// lives here; screens compose these.
+// Reusable UI kit, styled from theme tokens. Pure RN only — icons are
+// Unicode/emoji glyphs (no @expo/vector-icons, which pulls the native expo-font
+// module and would force a dev-client rebuild). No business logic here; screens
+// compose these.
 import { ReactNode } from "react";
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
+  StatusBar as RNStatusBar,
   StyleProp,
   StyleSheet,
   Text,
@@ -16,11 +18,35 @@ import {
 } from "react-native";
 
 import { DocStatus } from "../types";
-import { colors, font, radius, shadow, spacing, statusColors } from "./theme";
+import { Icon, IconName } from "./icons";
+import { colors, font, headerShadow, radius, shadow, spacing, statusColors } from "./theme";
+
+const ANDROID_TOP = Platform.OS === "android" ? (RNStatusBar.currentHeight ?? 0) : 0;
+
+// --- ScreenHeader (teal banner) -------------------------------------------
+
+export function ScreenHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+  return (
+    <View style={styles.header}>
+      <Text style={styles.headerTitle}>{title}</Text>
+      {subtitle && <Text style={styles.headerSub}>{subtitle}</Text>}
+    </View>
+  );
+}
+
+// --- PdfTile (rounded "PDF" badge) ----------------------------------------
+
+export function PdfTile({ size = 44 }: { size?: number }) {
+  return (
+    <View style={[styles.pdfTile, { width: size, height: size, borderRadius: size * 0.3 }]}>
+      <Text style={styles.pdfTileText}>PDF</Text>
+    </View>
+  );
+}
 
 // --- Button ---------------------------------------------------------------
 
-type ButtonVariant = "primary" | "secondary" | "danger" | "ghost";
+type ButtonVariant = "primary" | "accent" | "secondary" | "danger" | "ghost";
 
 export function Button({
   label,
@@ -37,7 +63,7 @@ export function Button({
   variant?: ButtonVariant;
   disabled?: boolean;
   loading?: boolean;
-  icon?: string; // a glyph, e.g. "＋"
+  icon?: IconName;
   small?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
@@ -60,7 +86,7 @@ export function Button({
         <ActivityIndicator color={v.fg} size="small" />
       ) : (
         <View style={styles.btnInner}>
-          {icon && <Text style={[styles.btnText, { color: v.fg }, small && font.small]}>{icon}</Text>}
+          {icon && <Icon name={icon} color={v.fg} size={small ? 16 : 18} strokeWidth={2.2} />}
           <Text style={[styles.btnText, { color: v.fg }, small && font.small]}>{label}</Text>
         </View>
       )}
@@ -70,8 +96,9 @@ export function Button({
 
 const BTN_VARIANTS: Record<ButtonVariant, { bg: string; fg: string; border: string }> = {
   primary: { bg: colors.primary, fg: colors.white, border: colors.primary },
-  secondary: { bg: colors.surface, fg: colors.primary, border: colors.primary },
-  danger: { bg: colors.surface, fg: colors.danger, border: colors.danger },
+  accent: { bg: colors.accent, fg: colors.accentText, border: colors.accent },
+  secondary: { bg: colors.surface, fg: colors.primaryDown, border: colors.border },
+  danger: { bg: colors.surface, fg: colors.danger, border: colors.dangerSoft },
   ghost: { bg: "transparent", fg: colors.sub, border: "transparent" },
 };
 
@@ -99,6 +126,12 @@ const STATUS_GLYPH: Record<DocStatus, string> = {
   failed: "✕",
 };
 
+const STATUS_LABEL: Record<DocStatus, string> = {
+  processing: "indexing",
+  ready: "ready",
+  failed: "failed",
+};
+
 export function StatusPill({ status }: { status: DocStatus }) {
   const c = statusColors[status];
   return (
@@ -108,12 +141,12 @@ export function StatusPill({ status }: { status: DocStatus }) {
       ) : (
         <Text style={[styles.pillGlyph, { color: c.fg }]}>{STATUS_GLYPH[status]}</Text>
       )}
-      <Text style={[styles.pillText, { color: c.fg }]}>{status}</Text>
+      <Text style={[styles.pillText, { color: c.fg }]}>{STATUS_LABEL[status]}</Text>
     </View>
   );
 }
 
-// --- Chip (toggle) --------------------------------------------------------
+// --- Chip (toggle, with indicator dot) ------------------------------------
 
 export function Chip({
   label,
@@ -129,6 +162,7 @@ export function Chip({
       onPress={onPress}
       style={({ pressed }) => [styles.chip, active && styles.chipOn, pressed && { opacity: 0.8 }]}
     >
+      <View style={[styles.chipDot, active ? styles.chipDotOn : styles.chipDotOff]} />
       <Text style={[styles.chipText, active && styles.chipTextOn]} numberOfLines={1}>
         {label}
       </Text>
@@ -138,10 +172,11 @@ export function Chip({
 
 // --- Badge ----------------------------------------------------------------
 
-export function Badge({ label }: { label: string }) {
+export function Badge({ label, tone = "danger" }: { label: string; tone?: "danger" | "warn" }) {
+  const c = tone === "warn" ? { fg: colors.warn, bg: colors.warnSoft } : { fg: colors.danger, bg: colors.dangerSoft };
   return (
-    <View style={styles.badge}>
-      <Text style={styles.badgeText}>{label}</Text>
+    <View style={[styles.badge, { backgroundColor: c.bg }]}>
+      <Text style={[styles.badgeText, { color: c.fg }]}>{label}</Text>
     </View>
   );
 }
@@ -198,13 +233,15 @@ export function EmptyState({
   title,
   hint,
 }: {
-  icon: string; // emoji glyph
+  icon: IconName;
   title: string;
   hint?: string;
 }) {
   return (
     <View style={styles.empty}>
-      <Text style={styles.emptyIcon}>{icon}</Text>
+      <View style={styles.emptyIconWrap}>
+        <Icon name={icon} size={30} color={colors.primaryDown} strokeWidth={1.8} />
+      </View>
       <Text style={styles.emptyTitle}>{title}</Text>
       {hint && <Text style={styles.emptyHint}>{hint}</Text>}
     </View>
@@ -222,22 +259,41 @@ export function SectionHeader({ label, style }: { label: string; style?: StylePr
 export function ErrorText({ children }: { children: ReactNode }) {
   return (
     <View style={styles.errorBox}>
-      <Text style={styles.errorGlyph}>⚠</Text>
+      <Icon name="alert" size={16} color={colors.danger} />
       <Text style={styles.errorText}>{children}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  header: {
+    backgroundColor: colors.header,
+    paddingTop: ANDROID_TOP + spacing.lg,
+    paddingBottom: spacing.xl,
+    paddingHorizontal: spacing.xl,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    ...headerShadow,
+  },
+  headerTitle: { ...font.h1, color: colors.headerText },
+  headerSub: { ...font.small, color: colors.headerSub, marginTop: spacing.xs },
+
+  pdfTile: {
+    backgroundColor: colors.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pdfTileText: { fontSize: 11, fontWeight: "800", color: colors.primaryDown, letterSpacing: 0.5 },
+
   btn: {
     borderWidth: 1,
-    borderRadius: radius.md,
-    paddingVertical: 14,
+    borderRadius: radius.lg,
+    paddingVertical: 16,
     paddingHorizontal: spacing.lg,
     alignItems: "center",
     justifyContent: "center",
   },
-  btnSmall: { paddingVertical: 8, paddingHorizontal: spacing.md, flex: 1 },
+  btnSmall: { paddingVertical: 10, paddingHorizontal: spacing.md, borderRadius: radius.md, flex: 1 },
   btnOff: { opacity: 0.45 },
   btnInner: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   btnText: { ...font.bodyStrong },
@@ -246,46 +302,52 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     padding: spacing.lg,
     ...shadow,
   },
-  cardWarn: { borderColor: colors.danger, backgroundColor: colors.dangerSoft },
+  cardWarn: { borderColor: colors.warnSoft, backgroundColor: "#FFFBF2" },
 
   pill: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.xs,
-    paddingVertical: 3,
-    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    paddingHorizontal: spacing.md,
     borderRadius: radius.pill,
     alignSelf: "flex-start",
   },
-  pillGlyph: { fontSize: 12, fontWeight: "700" },
+  pillGlyph: { fontSize: 12, fontWeight: "800" },
   pillText: { ...font.tiny, textTransform: "capitalize" },
 
   chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
     borderWidth: 1,
-    borderColor: colors.primary,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     borderRadius: radius.pill,
-    paddingVertical: 6,
+    paddingVertical: 7,
     paddingHorizontal: spacing.md,
     maxWidth: 220,
   },
-  chipOn: { backgroundColor: colors.primary },
-  chipText: { ...font.small, color: colors.primary },
+  chipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipDot: { width: 7, height: 7, borderRadius: 999 },
+  chipDotOn: { backgroundColor: colors.accent },
+  chipDotOff: { backgroundColor: colors.faint },
+  chipText: { ...font.small, color: colors.primaryDown, fontWeight: "600" },
   chipTextOn: { color: colors.white },
 
   badge: {
     alignSelf: "flex-start",
-    backgroundColor: colors.danger,
     borderRadius: radius.sm,
-    paddingVertical: 3,
+    paddingVertical: 4,
     paddingHorizontal: spacing.sm,
   },
-  badgeText: { ...font.tiny, color: colors.white, letterSpacing: 0.5 },
+  badgeText: { ...font.tiny, letterSpacing: 0.8 },
 
-  fieldLabel: { ...font.small, color: colors.sub, fontWeight: "600" },
+  fieldLabel: { ...font.small, color: colors.sub, fontWeight: "700" },
   input: {
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -296,19 +358,25 @@ const styles = StyleSheet.create({
     ...font.body,
     color: colors.text,
   },
-  inputMultiline: { minHeight: 88, textAlignVertical: "top" },
+  inputMultiline: { minHeight: 96, textAlignVertical: "top" },
 
   empty: { alignItems: "center", gap: spacing.sm, paddingVertical: spacing.xxl },
-  emptyIcon: { fontSize: 40 },
-  emptyTitle: { ...font.bodyStrong, color: colors.sub },
-  emptyHint: { ...font.small, color: colors.faint, textAlign: "center" },
+  emptyIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 24,
+    backgroundColor: colors.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.xs,
+  },
+  emptyTitle: { ...font.bodyStrong, color: colors.text },
+  emptyHint: { ...font.small, color: colors.faint, textAlign: "center", maxWidth: 280 },
 
   sectionHeader: {
-    ...font.small,
-    fontWeight: "700",
+    ...font.label,
     color: colors.faint,
     textTransform: "uppercase",
-    letterSpacing: 0.6,
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
   },
@@ -321,6 +389,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     padding: spacing.md,
   },
-  errorGlyph: { fontSize: 16, color: colors.danger },
   errorText: { ...font.small, color: colors.danger, flex: 1 },
 });

@@ -13,6 +13,7 @@ import {
   Chip,
   EmptyState,
   ErrorText,
+  PdfTile,
   TextField,
 } from "../ui/components";
 import { AnswerOut } from "../types";
@@ -50,12 +51,9 @@ export default function AskScreen({ docs }: { docs: DocumentListItem[] }) {
 
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
-      <Text style={styles.title}>Ask</Text>
-      <Text style={styles.sub}>Answers come only from your selected guidelines.</Text>
-
       {readyDocs.length === 0 ? (
         <EmptyState
-          icon="💬"
+          icon="ask"
           title="No ready documents"
           hint="Add and ingest a PDF in the Library tab first."
         />
@@ -81,7 +79,7 @@ export default function AskScreen({ docs }: { docs: DocumentListItem[] }) {
             ))}
           </View>
 
-          <Button label="Ask" icon="➤" onPress={onAsk} loading={busy} disabled={!question.trim()} />
+          <Button label="Ask" icon="send" onPress={onAsk} loading={busy} disabled={!question.trim()} />
         </>
       )}
 
@@ -89,17 +87,51 @@ export default function AskScreen({ docs }: { docs: DocumentListItem[] }) {
 
       {ans && (
         <Card tone={ans.not_covered ? "warn" : "default"} style={styles.answerCard}>
-          {ans.not_covered && <Badge label="NOT COVERED" />}
+          <View style={styles.answerHead}>
+            {ans.not_covered ? (
+              <Badge label="NOT COVERED" tone="warn" />
+            ) : (
+              <View style={styles.answerEyebrow}>
+                <View style={styles.answerDot} />
+                <Text style={styles.answerLabel}>ANSWER</Text>
+              </View>
+            )}
+            {ans.citations.length > 0 && (
+              <Text style={styles.sourceCount}>
+                {ans.citations.length} source{ans.citations.length > 1 ? "s" : ""}
+              </Text>
+            )}
+          </View>
+
           <Text style={styles.answer}>{ans.answer}</Text>
+
           {ans.citations.length > 0 && (
-            <View style={styles.cites}>
+            <>
+              <View style={styles.divider} />
+              <Text style={styles.sourcesLabel}>SOURCES</Text>
               {ans.citations.map((c, i) => (
-                <Text key={i} style={styles.cite}>
-                  • {c.filename} · p.{c.page}
-                </Text>
+                <View key={i} style={styles.source}>
+                  <PdfTile size={36} />
+                  <View style={styles.sourceInfo}>
+                    <Text style={styles.sourceName} numberOfLines={1}>
+                      {c.filename}
+                    </Text>
+                    <Text style={styles.pagePill}>page {c.page}</Text>
+                  </View>
+                </View>
               ))}
-            </View>
+            </>
           )}
+
+          <Button
+            label="New question"
+            variant="secondary"
+            onPress={() => {
+              setQuestion("");
+              setAns(null);
+            }}
+            style={styles.newQ}
+          />
         </Card>
       )}
     </ScrollView>
@@ -108,12 +140,32 @@ export default function AskScreen({ docs }: { docs: DocumentListItem[] }) {
 
 const styles = StyleSheet.create({
   page: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
-  title: { ...font.h1, color: colors.text },
-  sub: { ...font.small, color: colors.sub, marginBottom: spacing.xs },
   scopeLabel: { ...font.small, color: colors.faint, marginTop: spacing.xs },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+
   answerCard: { gap: spacing.sm, marginTop: spacing.sm },
-  answer: { ...font.body, color: colors.text, lineHeight: 22 },
-  cites: { gap: spacing.xs, marginTop: spacing.xs },
-  cite: { ...font.small, color: colors.primary, fontVariant: ["tabular-nums"] },
+  answerHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  answerEyebrow: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
+  answerDot: { width: 8, height: 8, borderRadius: 999, backgroundColor: colors.success },
+  answerLabel: { ...font.label, color: colors.success, textTransform: "uppercase" },
+  sourceCount: { ...font.small, color: colors.faint },
+  answer: { ...font.body, color: colors.text, lineHeight: 23 },
+
+  divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.xs },
+  sourcesLabel: { ...font.label, color: colors.faint, textTransform: "uppercase" },
+  source: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  sourceInfo: { flex: 1, gap: 3 },
+  sourceName: { ...font.bodyStrong, color: colors.text },
+  pagePill: {
+    ...font.tiny,
+    color: colors.primaryDown,
+    backgroundColor: colors.primarySoft,
+    alignSelf: "flex-start",
+    paddingVertical: 2,
+    paddingHorizontal: spacing.sm,
+    borderRadius: 999,
+    overflow: "hidden",
+    fontVariant: ["tabular-nums"],
+  },
+  newQ: { marginTop: spacing.sm },
 });

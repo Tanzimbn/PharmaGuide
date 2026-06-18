@@ -58,7 +58,6 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
-      <Text style={styles.title}>Settings</Text>
       <Text style={styles.sub}>
         Your key and endpoints stay on this device (secure storage). Use a
         non-confidential corpus — chunks go to your chosen LLM (NFR-2).
@@ -120,14 +119,13 @@ export default function SettingsScreen() {
       {err && <ErrorText>{err}</ErrorText>}
       {saved && <Text style={styles.savedNote}>Saved.</Text>}
 
-      <Button label="Save settings" icon="💾" onPress={onSave} loading={busy} />
+      <Button label="Save settings" icon="save" onPress={onSave} loading={busy} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   page: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.sm },
-  title: { ...font.h1, color: colors.text },
   sub: { ...font.small, color: colors.sub, marginBottom: spacing.sm },
   card: { gap: spacing.md },
   keyState: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
