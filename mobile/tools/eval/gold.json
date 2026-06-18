@@ -1,0 +1,62 @@
+[
+  {
+    "question": "What expression does the PIC/S Guide use instead of 'Qualified Person'?",
+    "expected_doc": "gold.pdf",
+    "expected_pages": [3],
+    "covered": true
+  },
+  {
+    "question": "What is the purpose of the Guide to Good Manufacturing Practice for medicinal products?",
+    "expected_doc": "gold.pdf",
+    "expected_pages": [2],
+    "covered": true
+  },
+  {
+    "question": "Do the GMP standards apply to the manufacture of veterinary products?",
+    "expected_doc": "gold.pdf",
+    "expected_pages": [2],
+    "covered": true
+  },
+  {
+    "question": "Who is the editor of the PIC/S GMP Guide and where are they located?",
+    "expected_doc": "gold.pdf",
+    "expected_pages": [1],
+    "covered": true
+  },
+  {
+    "question": "When was the PIC/S GMP Guide reorganised into Part I, Part II and Annexes?",
+    "expected_doc": "gold.pdf",
+    "expected_pages": [4],
+    "covered": true
+  },
+  {
+    "question": "What is the acceptance limit for total impurities in a drug substance?",
+    "expected_doc": null,
+    "expected_pages": [],
+    "covered": false
+  },
+  {
+    "question": "What are the airborne particle limits for a Grade A cleanroom?",
+    "expected_doc": null,
+    "expected_pages": [],
+    "covered": false
+  },
+  {
+    "question": "What temperature and time are required for moist-heat autoclave sterilization?",
+    "expected_doc": null,
+    "expected_pages": [],
+    "covered": false
+  },
+  {
+    "question": "How do I bake a sourdough bread loaf at home?",
+    "expected_doc": null,
+    "expected_pages": [],
+    "covered": false
+  },
+  {
+    "question": "What is the recommended validation protocol for an HVAC system?",
+    "expected_doc": null,
+    "expected_pages": [],
+    "covered": false
+  }
+]

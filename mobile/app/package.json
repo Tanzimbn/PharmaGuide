@@ -1,0 +1,32 @@
+{
+  "name": "pharmaguide-mobile",
+  "version": "0.0.0",
+  "private": true,
+  "description": "PharmaGuide Track B mobile app (on-device RAG). Graduated from the M0 spike; M1 = on-device ingestion (docs/mobile.md).",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start --dev-client",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "prebuild": "expo prebuild --clean",
+    "export-models": "python ../tools/export_onnx.py"
+  },
+  "dependencies": {
+    "expo": "~52.0.0",
+    "expo-asset": "~11.0.1",
+    "expo-build-properties": "~0.13.1",
+    "expo-crypto": "~14.0.2",
+    "expo-document-picker": "~13.0.3",
+    "expo-file-system": "~18.0.4",
+    "expo-secure-store": "~14.0.1",
+    "expo-sqlite": "~15.1.4",
+    "expo-status-bar": "~2.0.0",
+    "onnxruntime-react-native": "1.20.0",
+    "react": "18.3.1",
+    "react-native": "0.76.5"
+  },
+  "devDependencies": {
+    "@types/react": "~18.3.12",
+    "typescript": "~5.3.3"
+  }
+}

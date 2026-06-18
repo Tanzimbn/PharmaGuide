@@ -7,6 +7,13 @@ engineers query a document-scoped corpus. Specs live in `docs/mvp.md` and
 `docs/architecture.md` — treat those as the source of truth for requirements
 (FR-*/NFR-* IDs are referenced throughout the code).
 
+**Two product tracks.** *Track A — web* (this codebase: shared admin-curated
+corpus, server-side models, phases P1–P5) is what currently exists. *Track B —
+mobile* (a personal, on-device React Native app with the same groundedness
+contract; specced in `docs/mobile.md`, phases M0–M5) is planned and not yet
+built. The web app stays and evolves on its own; mobile is a separate build.
+Unless a task says "mobile", assume Track A.
+
 ## Non-negotiables (groundedness first — NFR-1)
 
 - Answers come **only** from retrieved chunks. Never supplement with model
@@ -45,8 +52,10 @@ backend/            FastAPI + SQLAlchemy 2.0 + Alembic; Postgres/pgvector
     schemas.py      pydantic I/O models
   migrations/       Alembic; 0001 = tables + HNSW + btree indexes
   tests/            pytest; DB tests skip when Postgres absent
-frontend/           Vite + React 19 + TS + Tailwind v4 query UI (P3)
-docs/               mvp.md (requirements), architecture.md (design)
+frontend/           Vite + React 19 + TS + Tailwind v4 SPA
+  src/              App, QueryPanel + DocumentSelector (P3), AdminPanel (P4), api.ts
+docs/               mvp.md (requirements), architecture.md (design),
+                    mobile.md (Track B spec), mobile-m0-spike.md (M0 spike plan)
 ```
 
 ## Run
@@ -98,8 +107,52 @@ cd backend && pytest -q
 
 ## Phase status
 
+**Track A (web):**
 - **P1 Ingestion core** — done (extract, chunk, embed, store, atomic replace/delete).
 - **P2 Query core** — done (retrieve → rerank → score guard → cited generation).
 - **P3 Document selection** — done (React query UI, scoped queries).
-- **P4 Admin UI**, **P5 eval/gold-set + latency tune** — not started.
-  `score_threshold` (config) is a placeholder to tune against a gold set in P5.
+- **P4 Admin UI** — done (React upload/categorize/replace/delete with live status;
+  branch `feat/p4-admin-ui`).
+- **P5 eval/gold-set + latency tune** — not started. `score_threshold` (config)
+  is a placeholder to tune against a gold set in P5.
+
+**Track B (mobile, `docs/mobile.md`):** phases M0–M5; app lives in `mobile/app/`,
+extraction service in `mobile/extract-service/`. Work on `mobile/*` branches.
+- **M0 Inference spike** — done (🟡). bge-small int8 runs + parity-verified on
+  Android CPU; NNAPI a net loss for int8 → CPU is the path. Plan/gates in
+  `docs/mobile-m0-spike.md`. Branch `mobile/m0-spike`.
+- **M1 On-device ingestion** — done. Pick PDF → extract (off-device pdfplumber
+  service, FR-R1 tables) → chunk (parity-checked vs backend `chunk_pages`) →
+  embed on-device → store in SQLite; status processing→ready→failed, atomic
+  replace/delete (FR-A2/A3, NFR-4). Embeddings stored as Float32 BLOB; sqlite-vec
+  vs brute-force kNN deferred to M2. Branch `mobile/m1-ingestion`.
+- **M2 On-device query** — done. embed query → **brute-force JS kNN** (over BLOB
+  vectors; sqlite-vec deferred — personal-scale corpus) → score guard → LLM →
+  grounded, page-cited answer + "not covered" fallback (FR-Q7/R3/R4, OQ-2,
+  FR-Q4/Q8). **Reranker dropped for M2** (needs unbuilt SentencePiece tokenizer +
+  ~3s/query; revisit with a gold set) → guard runs on **cosine similarity**
+  (`SCORE_THRESHOLD` placeholder, calibrate M5). LLM = OpenAI-compatible adapter
+  in `src/llm.ts`, key from gitignored `.env` (M4 = secure storage). Files
+  `src/{retrieve,llm,answer}.ts`.
+- **M3 Personal docs UI** — done. Real two-tab app replaces the M1/M2 harness:
+  **Library** (add/categorize[free-text+suggestions]/replace/delete with live
+  status) + **Ask** (scoped query → grounded, page-cited answer + "not covered").
+  Presentation only — reuses `pipeline`/`lifecycle`/`answer` unchanged. New
+  `src/ui/` kit (`theme.ts`, `components.tsx`), `src/screens/`, `useDocuments`
+  hook; **custom JS bottom tab bar** (no nav lib → no new native modules).
+  Branch `mobile/m3-docs-ui`.
+- **M4 LLM settings & access** — done. BYO key in **device secure storage**
+  (`expo-secure-store` → Keychain/Keystore); LLM base URL/model + extract URL are
+  runtime settings (no more `.env`/compile-time consts). New 3rd **Settings** tab
+  + `src/settings.ts` (load/get/save/clear; `config.ts` keeps only `DEFAULT_*`
+  seeds). `src/llm.ts`/`extractClient.ts` read settings at call time. Pure prompt
+  builders split to `src/prompt.ts` (keeps parity Node-loadable). One native
+  module → one-time `expo prebuild` + dev-client reinstall. Extraction is a
+  **per-user BYO endpoint, never shared** (NFR-2). Branch `mobile/m4-settings`.
+- **M5 Hardening** — done (on-device LLM deferred). Off-device Python eval
+  harness `mobile/tools/eval/run_eval.py` (reuses backend bge-small + chunk
+  logic) over a PIC/S GMP gold set → **cosine score-guard calibrated**:
+  `SCORE_THRESHOLD` 0.3 → **0.68** (separation-gap midpoint, ±0.024 margin for
+  fp32→int8 drift), recall@5 = 0.80. Latency = `__DEV__` stage timings in
+  `retrieve.ts`/`answer.ts` (read on device). On-device LLM/reranker/extraction +
+  sqlite-vec deferred. Branch `mobile/m5-hardening`.

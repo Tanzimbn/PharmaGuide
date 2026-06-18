@@ -1,0 +1,16 @@
+# Laptop-only tooling for the M0 spike: export the two web-app models to ONNX
+# and verify the ONNX outputs match the web app's Python encode path.
+#
+# Install into the backend venv (which already has torch + sentence-transformers):
+#   source ../../backend/.venv/bin/activate
+#   pip install -r requirements.txt
+#
+# sentence-transformers / torch come from the backend install; pinned loosely
+# here only so a fresh env still works.
+# optimum 2.x split ONNX Runtime support into the standalone optimum-onnx
+# package (provides the optimum.onnxruntime namespace the export uses).
+optimum>=2.0
+optimum-onnx>=0.1
+onnx>=1.15
+onnxruntime>=1.17
+sentence-transformers>=2.2

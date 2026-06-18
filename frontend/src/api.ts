@@ -13,6 +13,12 @@ export interface DocumentOut {
   version: number;
 }
 
+export interface UploadResult {
+  document: DocumentOut;
+  // Non-blocking corpus soft-alert message (guardrails), if any.
+  alert: string | null;
+}
+
 export interface Citation {
   doc_id: string;
   filename: string;
@@ -41,6 +47,48 @@ async function handle<T>(res: Response): Promise<T> {
 
 export async function listDocuments(): Promise<DocumentOut[]> {
   return handle<DocumentOut[]>(await fetch(`${BASE}/documents`));
+}
+
+// --- Admin: document management (FR-A1..A5). Multipart matches the FastAPI
+// UploadFile + Form(...) signature in app/api/documents.py. ---
+
+export async function uploadDocument(
+  file: File,
+  category: string,
+): Promise<UploadResult> {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("category", category);
+  return handle<UploadResult>(
+    await fetch(`${BASE}/documents`, { method: "POST", body: form }),
+  );
+}
+
+export async function replaceDocument(
+  id: string,
+  file: File,
+  category?: string,
+): Promise<UploadResult> {
+  const form = new FormData();
+  form.append("file", file);
+  if (category) form.append("category", category);
+  return handle<UploadResult>(
+    await fetch(`${BASE}/documents/${id}`, { method: "PUT", body: form }),
+  );
+}
+
+export async function deleteDocument(id: string): Promise<void> {
+  const res = await fetch(`${BASE}/documents/${id}`, { method: "DELETE" });
+  if (!res.ok) {
+    let detail = res.statusText;
+    try {
+      const body = await res.json();
+      if (body?.detail) detail = body.detail;
+    } catch {
+      // non-JSON / empty 204 body
+    }
+    throw new Error(detail);
+  }
 }
 
 export async function postQuery(

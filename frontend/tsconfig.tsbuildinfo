@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/documentselector.tsx","./src/querypanel.tsx","./src/api.ts","./src/main.tsx","./src/vite-env.d.ts"],"version":"5.9.3"}
+{"root":["./src/adminpanel.tsx","./src/app.tsx","./src/documentselector.tsx","./src/querypanel.tsx","./src/api.ts","./src/main.tsx","./src/vite-env.d.ts"],"version":"5.9.3"}

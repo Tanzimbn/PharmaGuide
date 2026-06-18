@@ -4,6 +4,14 @@
 **Date:** 15.06.2026
 **Status:** Ready for implementation planning
 
+> **Product tracks.** This document is **Track A — the web app**: a shared,
+> admin-curated corpus with server-side models (phases P1–P5). A second
+> **Track B — a personal, on-device React Native mobile app** is specified
+> separately in [`mobile.md`](mobile.md). The tracks share the groundedness
+> contract and much TypeScript logic but differ in corpus ownership, where
+> models run, and storage. Track A is unchanged by Track B and remains the
+> source of truth for the web product.
+
 ---
 
 ## 1. Core principles

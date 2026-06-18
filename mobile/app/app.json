@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "PharmaGuide",
+    "slug": "pharmaguide-mobile",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "com.pharmaguide.app",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.pharmaguide.app"
+    },
+    "plugins": [
+      "expo-asset",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "1.9.24"
+          }
+        }
+      ],
+      "expo-sqlite",
+      "./plugins/withOnnxRuntimePin",
+      "expo-secure-store"
+    ]
+  }
+}
