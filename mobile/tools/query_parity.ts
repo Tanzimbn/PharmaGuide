@@ -7,7 +7,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { SYSTEM_PROMPT, buildContext, buildUserPrompt } from "../app/src/llm";
+import { SYSTEM_PROMPT, buildContext, buildUserPrompt } from "../app/src/prompt";
 import { RetrievedChunk } from "../app/src/types";
 
 const here = import.meta.dirname;

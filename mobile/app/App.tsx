@@ -1,9 +1,9 @@
-// App shell (M3) — the real PharmaGuide mobile app. Holds shared document state
-// and a custom bottom tab bar (Library / Ask). No nav library: two screens are
-// switched in JS, so no new native modules and the installed dev-client APK
-// keeps working without a rebuild.
+// App shell — the real PharmaGuide mobile app. Holds shared document state and a
+// custom bottom tab bar (Library / Ask / Settings). No nav library: screens are
+// switched in JS. M4 loads runtime settings (BYO key + endpoints from secure
+// storage) in the startup gate before any screen or query reads them.
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -18,10 +18,12 @@ import {
 import { useDocuments } from "./src/hooks/useDocuments";
 import AskScreen from "./src/screens/AskScreen";
 import LibraryScreen from "./src/screens/LibraryScreen";
+import SettingsScreen from "./src/screens/SettingsScreen";
+import { loadSettings } from "./src/settings";
 import { ErrorText } from "./src/ui/components";
 import { colors, font, shadow, spacing } from "./src/ui/theme";
 
-type Tab = "library" | "ask";
+type Tab = "library" | "ask" | "settings";
 
 const ANDROID_TOP = Platform.OS === "android" ? (RNStatusBar.currentHeight ?? 0) : 0;
 
@@ -29,39 +31,44 @@ export default function App() {
   const [tab, setTab] = useState<Tab>("library");
   const { docs, loading, error, refresh } = useDocuments();
 
+  // Load runtime settings once before first render so getSettings() is safe.
+  const [settingsReady, setSettingsReady] = useState(false);
+  const [settingsErr, setSettingsErr] = useState<string | null>(null);
+  useEffect(() => {
+    loadSettings()
+      .then(() => setSettingsReady(true))
+      .catch((e) => setSettingsErr(String(e instanceof Error ? e.message : e)));
+  }, []);
+
+  const booting = loading || !settingsReady;
+  const bootErr = error ?? settingsErr;
+
   return (
     <SafeAreaView style={[styles.root, { paddingTop: ANDROID_TOP }]}>
       <StatusBar style="dark" />
 
       <View style={styles.body}>
-        {loading ? (
+        {bootErr ? (
+          <View style={styles.center}>
+            <ErrorText>{bootErr}</ErrorText>
+          </View>
+        ) : booting ? (
           <View style={styles.center}>
             <ActivityIndicator color={colors.primary} />
           </View>
-        ) : error ? (
-          <View style={styles.center}>
-            <ErrorText>{error}</ErrorText>
-          </View>
         ) : tab === "library" ? (
           <LibraryScreen docs={docs} refresh={refresh} />
-        ) : (
+        ) : tab === "ask" ? (
           <AskScreen docs={docs} />
+        ) : (
+          <SettingsScreen />
         )}
       </View>
 
       <View style={styles.tabBar}>
-        <TabButton
-          glyph="📚"
-          label="Library"
-          active={tab === "library"}
-          onPress={() => setTab("library")}
-        />
-        <TabButton
-          glyph="💬"
-          label="Ask"
-          active={tab === "ask"}
-          onPress={() => setTab("ask")}
-        />
+        <TabButton glyph="📚" label="Library" active={tab === "library"} onPress={() => setTab("library")} />
+        <TabButton glyph="💬" label="Ask" active={tab === "ask"} onPress={() => setTab("ask")} />
+        <TabButton glyph="⚙️" label="Settings" active={tab === "settings"} onPress={() => setTab("settings")} />
       </View>
     </SafeAreaView>
   );

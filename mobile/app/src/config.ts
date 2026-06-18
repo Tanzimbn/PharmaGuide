@@ -8,11 +8,6 @@ export const MAX_PAGES_PER_FILE = 150; // max_pages_per_file (hard reject)
 
 export const EMBED_BATCH_SIZE = 16; // bound memory/thermals on bulk embed (§10)
 
-// Extraction service base URL (mobile.md §6 Option B). In dev this is your
-// laptop's LAN IP, NOT localhost — the phone reaches it over wifi. Find it with
-// `ipconfig getifaddr en0` (macOS). See mobile/extract-service/README.md.
-export const EXTRACT_BASE_URL = "http://192.168.84.90:8001";
-
 // --- Query path (M2) ---
 
 export const QUERY_TOP_K = 5; // chunks sent to the LLM. No reranker in M2, so
@@ -25,21 +20,23 @@ export const QUERY_TOP_K = 5; // chunks sent to the LLM. No reranker in M2, so
 // calibrate against a gold set in M5 (mobile.md §13 M5).
 export const SCORE_THRESHOLD = 0.3;
 
-// LLM generation endpoint (OpenAI-compatible /chat/completions). The single swap
-// point (arch §7): point these at any hosted trial endpoint (Groq/OpenRouter/
-// Together) or local Ollama. DEV CONFIG ONLY — M4 moves the key into secure
-// storage (Keychain/Keystore) with a BYO-key entry screen.
-//
-// NFR-2 (data residency): retrieved chunks leave the device to a hosted LLM, so
-// use NON-CONFIDENTIAL sample PDFs only until generation moves in-VPC/on-device.
-//
-// The API key is read from a GITIGNORED .env (EXPO_PUBLIC_* is inlined at build
-// time) so a real key never lands in git — this repo is public. Copy
-// .env.example to .env and paste your trial key there. base_url/model can be
-// overridden the same way; they fall back to the public Groq trial defaults.
-export const LLM_BASE_URL =
-  process.env.EXPO_PUBLIC_LLM_BASE_URL ?? "https://api.groq.com/openai/v1";
-export const LLM_MODEL = process.env.EXPO_PUBLIC_LLM_MODEL ?? "llama-3.3-70b-versatile";
-export const LLM_API_KEY = process.env.EXPO_PUBLIC_LLM_API_KEY ?? ""; // from .env, never committed
 export const LLM_MAX_TOKENS = 1024;
 export const LLM_TIMEOUT_MS = 30000;
+
+// --- Runtime-setting seeds (M4) ---
+//
+// As of M4 the key, endpoints, and model are RUNTIME settings stored in device
+// secure storage and edited in the Settings tab (see settings.ts). The consts
+// below are only the FIRST-RUN SEED — what a fresh install starts with before
+// the user saves anything. The `EXPO_PUBLIC_*` reads let the dev workbench seed
+// real values from a gitignored .env; production installs start from the bare
+// defaults. No API key default — the key is BYO, never bundled (mobile.md §8).
+//
+// NFR-2: extraction is a PER-USER endpoint (BYO), never a shared service every
+// user's PDFs transit. Default blank so the user sets their own.
+export const DEFAULT_EXTRACT_BASE_URL = process.env.EXPO_PUBLIC_EXTRACT_BASE_URL ?? "";
+export const DEFAULT_LLM_BASE_URL =
+  process.env.EXPO_PUBLIC_LLM_BASE_URL ?? "https://api.groq.com/openai/v1";
+export const DEFAULT_LLM_MODEL =
+  process.env.EXPO_PUBLIC_LLM_MODEL ?? "llama-3.3-70b-versatile";
+export const DEFAULT_LLM_API_KEY = process.env.EXPO_PUBLIC_LLM_API_KEY ?? ""; // dev seed only

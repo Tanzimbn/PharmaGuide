@@ -141,5 +141,14 @@ extraction service in `mobile/extract-service/`. Work on `mobile/*` branches.
   `src/ui/` kit (`theme.ts`, `components.tsx`), `src/screens/`, `useDocuments`
   hook; **custom JS bottom tab bar** (no nav lib → no new native modules).
   Branch `mobile/m3-docs-ui`.
-- **M4 LLM settings & access** — not started (BYO-key entry + secure storage
-  Keychain/Keystore, host/model settings, make `EXTRACT_BASE_URL` a setting).
+- **M4 LLM settings & access** — done. BYO key in **device secure storage**
+  (`expo-secure-store` → Keychain/Keystore); LLM base URL/model + extract URL are
+  runtime settings (no more `.env`/compile-time consts). New 3rd **Settings** tab
+  + `src/settings.ts` (load/get/save/clear; `config.ts` keeps only `DEFAULT_*`
+  seeds). `src/llm.ts`/`extractClient.ts` read settings at call time. Pure prompt
+  builders split to `src/prompt.ts` (keeps parity Node-loadable). One native
+  module → one-time `expo prebuild` + dev-client reinstall. Extraction is a
+  **per-user BYO endpoint, never shared** (NFR-2). Branch `mobile/m4-settings`.
+- **M5 Hardening** — not started (gold-set accuracy, `SCORE_THRESHOLD`
+  calibration, latency/battery tuning, on-device-LLM exploration for full
+  residency).

@@ -1,35 +1,14 @@
-// LLM adapter (M2) — port of backend/app/query/llm.py. The single swap point for
-// generation (arch §7): an OpenAI-compatible /chat/completions call behind a
-// config const so the hosted trial endpoint can be swapped for in-VPC/on-device
-// later (NFR-2). Generation is deterministic (temperature 0, FR-R4).
+// LLM adapter — port of backend/app/query/llm.py. The single swap point for
+// generation (arch §7): an OpenAI-compatible /chat/completions call. M4 reads
+// the endpoint, model, and BYO key from runtime settings (secure storage) so the
+// host can be swapped for in-VPC/on-device later (NFR-2). Generation is
+// deterministic (temperature 0, FR-R4).
 //
-// SYSTEM_PROMPT, buildContext, and buildUserPrompt are kept BYTE-IDENTICAL to the
-// web app (parity-checked in tools/query_parity) so on-device answers match the
-// shared groundedness contract: answer only from the numbered context (FR-R3),
-// mandatory page citations (FR-Q6/OQ-2), and the exact "not covered" escape hatch.
-import { LLM_API_KEY, LLM_BASE_URL, LLM_MAX_TOKENS, LLM_MODEL, LLM_TIMEOUT_MS } from "./config";
-import { RetrievedChunk } from "./types";
-
-export const SYSTEM_PROMPT =
-  "You are PharmaGuide, a compliance assistant for pharmaceutical " +
-  "manufacturing guidelines. Answer ONLY using the numbered context " +
-  "passages provided below. Do not use any outside or prior knowledge.\n" +
-  "- Every factual statement must cite its source as (filename, p.N) using " +
-  "the filename and page shown on the passage it came from.\n" +
-  "- Preserve numeric values, units, and table figures exactly.\n" +
-  '- If the context does not contain the answer, reply exactly: ' +
-  '"Not covered in the selected guidelines." and nothing else.';
-
-/** Render retrieved chunks into a numbered, citation-tagged context block. */
-export function buildContext(chunks: RetrievedChunk[]): string {
-  return chunks
-    .map((c, i) => `[${i + 1}] (filename: ${c.filename}, p.${c.page_number})\n${c.text}`)
-    .join("\n\n");
-}
-
-export function buildUserPrompt(question: string, chunks: RetrievedChunk[]): string {
-  return `Context passages:\n\n${buildContext(chunks)}\n\nQuestion: ${question}`;
-}
+// The pure prompt builders (SYSTEM_PROMPT / buildContext / buildUserPrompt) live
+// in ./prompt — kept native-import-free so the parity check can load them under
+// plain Node. This module only does the network call.
+import { LLM_MAX_TOKENS, LLM_TIMEOUT_MS } from "./config";
+import { getSettings } from "./settings";
 
 /** Call the configured OpenAI-compatible endpoint (temperature 0). */
 export async function generate({
@@ -39,10 +18,9 @@ export async function generate({
   system: string;
   user: string;
 }): Promise<string> {
-  if (!LLM_API_KEY) {
-    throw new Error(
-      "LLM_API_KEY is not set in src/config.ts; cannot reach the generation endpoint.",
-    );
+  const { llmApiKey, llmBaseUrl, llmModel } = getSettings();
+  if (!llmApiKey) {
+    throw new Error("No API key set. Add your LLM API key in the Settings tab.");
   }
 
   const ctrl = new AbortController();
@@ -50,14 +28,14 @@ export async function generate({
 
   let resp: Response;
   try {
-    resp = await fetch(`${LLM_BASE_URL.replace(/\/$/, "")}/chat/completions`, {
+    resp = await fetch(`${llmBaseUrl.replace(/\/$/, "")}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${LLM_API_KEY}`,
+        Authorization: `Bearer ${llmApiKey}`,
       },
       body: JSON.stringify({
-        model: LLM_MODEL,
+        model: llmModel,
         messages: [
           { role: "system", content: system },
           { role: "user", content: user },
@@ -68,7 +46,7 @@ export async function generate({
       signal: ctrl.signal,
     });
   } catch (e) {
-    throw new Error(`LLM request failed (network/timeout) at ${LLM_BASE_URL}: ${String(e)}`);
+    throw new Error(`LLM request failed (network/timeout) at ${llmBaseUrl}: ${String(e)}`);
   } finally {
     clearTimeout(timer);
   }

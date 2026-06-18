@@ -156,6 +156,9 @@ export function TextField({
   multiline,
   editable = true,
   autoFocus,
+  secureTextEntry,
+  autoCapitalize,
+  autoCorrect,
 }: {
   label?: string;
   value: string;
@@ -164,6 +167,9 @@ export function TextField({
   multiline?: boolean;
   editable?: boolean;
   autoFocus?: boolean;
+  secureTextEntry?: boolean;
+  autoCapitalize?: "none" | "sentences" | "words" | "characters";
+  autoCorrect?: boolean;
 }) {
   return (
     <View style={{ gap: spacing.xs }}>
@@ -177,6 +183,9 @@ export function TextField({
         multiline={multiline}
         editable={editable}
         autoFocus={autoFocus}
+        secureTextEntry={secureTextEntry}
+        autoCapitalize={autoCapitalize}
+        autoCorrect={autoCorrect}
       />
     </View>
   );

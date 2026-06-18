@@ -24,7 +24,8 @@
         }
       ],
       "expo-sqlite",
-      "./plugins/withOnnxRuntimePin"
+      "./plugins/withOnnxRuntimePin",
+      "expo-secure-store"
     ]
   }
 }
