@@ -14,6 +14,7 @@ import {
   Card,
   EmptyState,
   ErrorText,
+  PdfTile,
   SectionHeader,
   StatusPill,
   TextField,
@@ -95,14 +96,14 @@ export default function LibraryScreen({
 
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
-      <Text style={styles.title}>Documents</Text>
-      <Text style={styles.sub}>Add non-confidential PDFs to query on-device.</Text>
-
       {pending ? (
         <Card style={styles.addPanel}>
-          <Text style={font.bodyStrong} numberOfLines={1}>
-            {pending.name}
-          </Text>
+          <View style={styles.addHead}>
+            <PdfTile size={36} />
+            <Text style={[font.bodyStrong, styles.addName]} numberOfLines={1}>
+              {pending.name}
+            </Text>
+          </View>
           <TextField
             label="Category"
             value={category}
@@ -129,7 +130,7 @@ export default function LibraryScreen({
             />
             <Button
               label="Add"
-              icon="＋"
+              icon="plus"
               small
               onPress={onConfirmAdd}
               loading={busy === "add"}
@@ -137,14 +138,14 @@ export default function LibraryScreen({
           </View>
         </Card>
       ) : (
-        <Button label="Add PDF" icon="＋" onPress={onPickForAdd} disabled={!!busy} />
+        <Button label="Add PDF" icon="plus" variant="accent" onPress={onPickForAdd} disabled={!!busy} />
       )}
 
       {err && <ErrorText>{err}</ErrorText>}
 
       {docs.length === 0 && !busy && (
         <EmptyState
-          icon="📁"
+          icon="folder"
           title="No documents yet"
           hint="Tap Add PDF to ingest your first guideline."
         />
@@ -156,19 +157,22 @@ export default function LibraryScreen({
           {items.map((d) => (
             <Card key={d.id} style={styles.docCard}>
               <View style={styles.docHead}>
-                <Text style={styles.docName} numberOfLines={2}>
-                  {d.filename}
-                </Text>
+                <PdfTile />
+                <View style={styles.docInfo}>
+                  <Text style={styles.docName} numberOfLines={2}>
+                    {d.filename}
+                  </Text>
+                  <Text style={styles.meta}>
+                    {d.page_count} pages · {d.chunk_count} chunks · v{d.version}
+                  </Text>
+                </View>
                 <StatusPill status={d.status} />
               </View>
-              <Text style={styles.meta}>
-                {d.page_count} pages · {d.chunk_count} chunks · v{d.version}
-              </Text>
               {d.status === "failed" && <Badge label="INGEST FAILED" />}
               <View style={styles.docActions}>
                 <Button
                   label="Replace"
-                  icon="↻"
+                  icon="refresh"
                   variant="secondary"
                   small
                   onPress={() => onReplace(d)}
@@ -176,7 +180,7 @@ export default function LibraryScreen({
                 />
                 <Button
                   label="Delete"
-                  icon="🗑"
+                  icon="trash"
                   variant="danger"
                   small
                   onPress={() => onDelete(d)}
@@ -208,13 +212,13 @@ function groupByCategory(
 
 const styles = StyleSheet.create({
   page: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.sm },
-  title: { ...font.h1, color: colors.text },
-  sub: { ...font.small, color: colors.sub, marginBottom: spacing.sm },
   addPanel: { gap: spacing.md, borderColor: colors.primary },
+  addHead: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  addName: { flex: 1, color: colors.text },
   suggestRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   suggest: {
     ...font.small,
-    color: colors.primary,
+    color: colors.primaryDown,
     backgroundColor: colors.primarySoft,
     paddingVertical: 4,
     paddingHorizontal: spacing.sm,
@@ -223,8 +227,9 @@ const styles = StyleSheet.create({
   },
   addActions: { flexDirection: "row", gap: spacing.sm, justifyContent: "flex-end" },
   docCard: { gap: spacing.sm, marginBottom: spacing.sm },
-  docHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: spacing.sm },
-  docName: { ...font.bodyStrong, color: colors.text, flex: 1 },
+  docHead: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  docInfo: { flex: 1, gap: 2 },
+  docName: { ...font.bodyStrong, color: colors.text },
   meta: { ...font.small, color: colors.sub, fontVariant: ["tabular-nums"] },
   docActions: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.xs },
 });

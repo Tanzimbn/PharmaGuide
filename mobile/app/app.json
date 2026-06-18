@@ -5,6 +5,11 @@
     "version": "0.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
+    "backgroundColor": "#0C9A86",
+    "splash": {
+      "backgroundColor": "#0C9A86",
+      "resizeMode": "contain"
+    },
     "newArchEnabled": true,
     "ios": {
       "bundleIdentifier": "com.pharmaguide.app",
