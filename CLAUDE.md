@@ -134,5 +134,12 @@ extraction service in `mobile/extract-service/`. Work on `mobile/*` branches.
   (`SCORE_THRESHOLD` placeholder, calibrate M5). LLM = OpenAI-compatible adapter
   in `src/llm.ts`, key from gitignored `.env` (M4 = secure storage). Files
   `src/{retrieve,llm,answer}.ts`.
-- **M3 Personal docs UI** — not started (real add/categorize/replace/delete +
-  query UI; current App.tsx is a dev harness).
+- **M3 Personal docs UI** — done. Real two-tab app replaces the M1/M2 harness:
+  **Library** (add/categorize[free-text+suggestions]/replace/delete with live
+  status) + **Ask** (scoped query → grounded, page-cited answer + "not covered").
+  Presentation only — reuses `pipeline`/`lifecycle`/`answer` unchanged. New
+  `src/ui/` kit (`theme.ts`, `components.tsx`), `src/screens/`, `useDocuments`
+  hook; **custom JS bottom tab bar** (no nav lib → no new native modules).
+  Branch `mobile/m3-docs-ui`.
+- **M4 LLM settings & access** — not started (BYO-key entry + secure storage
+  Keychain/Keystore, host/model settings, make `EXTRACT_BASE_URL` a setting).

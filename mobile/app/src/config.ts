@@ -11,7 +11,7 @@ export const EMBED_BATCH_SIZE = 16; // bound memory/thermals on bulk embed (§10
 // Extraction service base URL (mobile.md §6 Option B). In dev this is your
 // laptop's LAN IP, NOT localhost — the phone reaches it over wifi. Find it with
 // `ipconfig getifaddr en0` (macOS). See mobile/extract-service/README.md.
-export const EXTRACT_BASE_URL = "http://192.168.84.63:8001";
+export const EXTRACT_BASE_URL = "http://192.168.84.90:8001";
 
 // --- Query path (M2) ---
 
